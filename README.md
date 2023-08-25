@@ -1,139 +1,73 @@
-# Demo Devops Python
+# Demo Devops Python CI/CD With AWS
 
-This is a simple application to be used in the technical test of DevOps.
+This is a Dockerized version of the technical test for DevOps.
+
+## Diagram
+
+![Logo de Markdown](https://cicd-pic.s3.amazonaws.com/CICD-Devsu.JPG)
+
+This project is done using AWS for its deployment. From Code Commit, a connection to GitHub was created to use it as the source of the pipeline, to connect with Code build and proceed with the automatic deployment of the Docker image hosted in ECR and using EKS to deploy the application with Kubernetes. In the Iac directory (Infrastructure as a code) you can find all the provisioning of the infrastructure: Cluster, servers, IAM roles, services, etc.
+
 
 ## Getting Started
 
-### Prerequisites
-
-- Python 3.11.3
-
-### Installation
-
-Clone this repo.
+### Create Docker Image
 
 ```bash
-git clone https://bitbucket.org/devsu/demo-devops-python.git
+docker build -t <IMAGE-NAME> .
 ```
-
-Install dependencies.
+### Create ECR repo
 
 ```bash
-pip install -r requirements.txt
+aws ecr create-repository --repository-name <REPO-NAME> --region us-east-1
 ```
 
-Migrate database
+### Authenticate your docker to ecr
 
 ```bash
-py manage.py makemigrations
-py manage.py migrate
+aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin <ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com
 ```
 
-### Database
-
-The database is generated as a file in the main path when the project is first run, and its name is `db.sqlite3`.
-
-Consider giving access permissions to the file for proper functioning.
-
-## Usage
-
-To run tests you can use this command.
+### Tag docker image
 
 ```bash
-py manage.py test
+docker tag <IMAGE-NAME:tag> <ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com/<REPO-NAME:tag>
 ```
 
-To run locally the project you can use this command.
+### Push docker image
 
 ```bash
-py manage.py runserver
+docker push <ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com/<REPO-NAME:tag>
 ```
 
-Open http://localhost:8000/api/ with your browser to see the result.
 
-### Features
+## Infrastructure as a Code
 
-These services can perform,
-
-#### Create User
-
-To create a user, the endpoint **/api/users/** must be consumed with the following parameters:
+## Provision VPC and subnets
+```bash
+aws cloudformation deploy --template-file Iac/vpc.yaml --stack-name my-new-stack
+```
+## Create our cluster on EKS
 
 ```bash
-  Method: POST
+eksctl create cluster -f Iac/cluster.yaml 
 ```
 
-```json
-{
-    "dni": "dni",
-    "name": "name"
-}
-```
-
-If the response is successful, the service will return an HTTP Status 200 and a message with the following structure:
-
-```json
-{
-    "id": 1,
-    "dni": "dni",
-    "name": "name"
-}
-```
-
-If the response is unsuccessful, we will receive status 400 and the following message:
-
-```json
-{
-    "detail": "error"
-}
-```
-
-#### Get Users
-
-To get all users, the endpoint **/api/users** must be consumed with the following parameters:
+## Create deployment
 
 ```bash
-  Method: GET
+kubectl apply -f Iac/deployment.yaml
 ```
 
-If the response is successful, the service will return an HTTP Status 200 and a message with the following structure:
-
-```json
-[
-    {
-        "id": 1,
-        "dni": "dni",
-        "name": "name"
-    }
-]
-```
-
-#### Get User
-
-To get an user, the endpoint **/api/users/<id>** must be consumed with the following parameters:
+## Create service
 
 ```bash
-  Method: GET
+kubectl apply -f Iac/service.yaml
 ```
 
-If the response is successful, the service will return an HTTP Status 200 and a message with the following structure:
 
-```json
-{
-    "id": 1,
-    "dni": "dni",
-    "name": "name"
-}
-```
 
-If the user id does not exist, we will receive status 404 and the following message:
 
-```json
-{
-    "detail": "Not found."
-}
-```
 
-## License
 
-Copyright © 2023 Devsu. All rights reserved.
+
