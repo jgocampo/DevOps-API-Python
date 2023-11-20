@@ -14,9 +14,14 @@ RUN pip install -r requirements.txt
 RUN python manage.py makemigrations
 RUN python manage.py migrate
 
-# Expone el puerto en el que se ejecutará tu aplicación
+# Expone el puerto en el que se ejecutará la aplicación
 EXPOSE 8000
 
-# Comando para ejecutar tu aplicación
+# Healthcheck: Verifica la salud de la aplicación
+HEALTHCHECK --interval=30s --timeout=10s \
+  CMD curl --fail http://localhost:8000/ || exit 1
+
+# Ejecutar aplicación
 CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+
 
